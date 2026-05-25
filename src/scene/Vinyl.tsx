@@ -3,19 +3,15 @@ import type { TurntableState } from '../playback/deriveTurntableState';
 import { extractPalette, type Palette } from '../palette/extractPalette';
 import { useSkin } from '../skins/useSkin';
 import { getVinylLabelColor } from './vinylColors';
+import { getVinylAnimationState, VINYL_SPIN_DURATION_MS } from './vinylMotion';
 
 interface Props {
   state: TurntableState;
   size?: number;
 }
 
-const RPM = 100 / 3;
-const SPIN_DURATION_MS = 60_000 / RPM;
-
 export function Vinyl({ state, size = 420 }: Props) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const animationRef = useRef<Animation | null>(null);
-  const cancelRateEaseRef = useRef<(() => void) | null>(null);
   const skin = useSkin();
   const [palette, setPalette] = useState<Palette | null>(null);
   const [redrawTick, setRedrawTick] = useState(0);
@@ -70,41 +66,30 @@ export function Vinyl({ state, size = 420 }: Props) {
     drawVinyl(context, size, skin.label.ringColor, palette);
   }, [size, skin.label.ringColor, palette, state.transitionKey, redrawTick]);
 
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-
-    if (!animationRef.current) {
-      animationRef.current = canvas.animate(
-        [{ transform: 'rotate(0deg)' }, { transform: 'rotate(360deg)' }],
-        { duration: SPIN_DURATION_MS, iterations: Infinity, easing: 'linear' }
-      );
-      animationRef.current.playbackRate = 0;
-    }
-
-    const animation = animationRef.current;
-    const targetRate = state.isPlaying && !prefersReducedMotion() ? 1 : 0;
-    cancelRateEaseRef.current?.();
-    cancelRateEaseRef.current = easePlaybackRate(animation, targetRate, 1500);
-
-    return () => {
-      cancelRateEaseRef.current?.();
-    };
-  }, [state.isPlaying, state.transitionKey, redrawTick]);
-
-  useEffect(() => {
-    const animation = animationRef.current;
-    return () => {
-      animation?.cancel();
-    };
-  }, []);
+  const animationPlayState = getVinylAnimationState({
+    isPlaying: state.isPlaying,
+    reducedMotion: prefersReducedMotion(),
+  });
 
   return (
     <div className="relative" style={{ width: size, height: size }}>
-      <canvas
-        ref={canvasRef}
-        style={{ width: size, height: size, display: 'block', borderRadius: '50%' }}
-      />
+      <div
+        data-testid="vinyl-disc"
+        style={{
+          width: size,
+          height: size,
+          borderRadius: '50%',
+          animation: `vinyl-spin ${VINYL_SPIN_DURATION_MS}ms linear infinite`,
+          animationPlayState,
+          transformOrigin: 'center center',
+          willChange: animationPlayState === 'running' ? 'transform' : undefined,
+        }}
+      >
+        <canvas
+          ref={canvasRef}
+          style={{ width: size, height: size, display: 'block', borderRadius: '50%' }}
+        />
+      </div>
       <div
         aria-hidden
         className="absolute inset-0 rounded-full pointer-events-none"
@@ -142,6 +127,12 @@ function drawVinyl(
     context.stroke();
   }
 
+  context.strokeStyle = 'rgba(255,255,255,0.12)';
+  context.lineWidth = 2;
+  context.beginPath();
+  context.arc(cx, cy, radius * 0.72, -0.3, 0.18);
+  context.stroke();
+
   context.fillStyle = ringColor;
   context.beginPath();
   context.arc(cx, cy, radius * 0.35, 0, Math.PI * 2);
@@ -152,37 +143,18 @@ function drawVinyl(
   context.arc(cx, cy, radius * 0.3, 0, Math.PI * 2);
   context.fill();
 
+  context.fillStyle = 'rgba(255,255,255,0.35)';
+  context.beginPath();
+  context.arc(cx + radius * 0.12, cy - radius * 0.08, radius * 0.02, 0, Math.PI * 2);
+  context.fill();
+
   context.fillStyle = '#000';
   context.beginPath();
   context.arc(cx, cy, radius * 0.025, 0, Math.PI * 2);
   context.fill();
 }
 
-function easePlaybackRate(
-  animation: Animation,
-  target: number,
-  durationMs: number
-): () => void {
-  const start = animation.playbackRate;
-  const startTime = performance.now();
-  let frameId = 0;
-  let cancelled = false;
-
-  function step(now: number) {
-    if (cancelled) return;
-    const t = Math.min(1, (now - startTime) / durationMs);
-    const eased = 1 - Math.pow(1 - t, 3);
-    animation.playbackRate = start + (target - start) * eased;
-    if (t < 1) frameId = requestAnimationFrame(step);
-  }
-
-  frameId = requestAnimationFrame(step);
-  return () => {
-    cancelled = true;
-    cancelAnimationFrame(frameId);
-  };
-}
-
 function prefersReducedMotion(): boolean {
+  if (typeof window === 'undefined' || !window.matchMedia) return false;
   return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 }

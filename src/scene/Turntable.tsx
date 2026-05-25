@@ -22,9 +22,7 @@ export function Turntable({ state }: Props) {
         }}
       />
       {state.kind !== 'idle' && <Vinyl state={state} size={420} />}
-      <div className="absolute top-0 right-0 -translate-y-3 translate-x-3">
-        <Tonearm state={state} />
-      </div>
+      <Tonearm state={state} />
     </div>
   );
 }
