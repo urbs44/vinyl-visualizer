@@ -27,31 +27,49 @@ export function Tonearm({ state }: Props) {
           transition,
         }}
       >
-        <line
-          x1={pose.pivot.x - 10}
-          y1={pose.pivot.y + 4}
-          x2={pose.stylus.x + 16}
-          y2={pose.stylus.y - 10}
+        <path
+          d={`M ${pose.pivot.x - 3} ${pose.pivot.y + 14} C ${pose.pivot.x - 6} ${
+            pose.pivot.y + 100
+          }, ${pose.pivot.x + 4} ${pose.pivot.y + 170}, ${TONEARM_GEOMETRY.parkedStylus.x} ${
+            TONEARM_GEOMETRY.parkedStylus.y - 18
+          }`}
+          fill="none"
           stroke={skin.tonearm.color}
-          strokeWidth={9}
+          strokeWidth={8}
           strokeLinecap="round"
         />
         <g
           data-testid="tonearm-headshell"
-          transform={`translate(${pose.stylus.x} ${pose.stylus.y}) rotate(${pose.armAngleDeg})`}
+          transform={`translate(${TONEARM_GEOMETRY.parkedStylus.x} ${TONEARM_GEOMETRY.parkedStylus.y}) rotate(90)`}
         >
-          <rect x="-24" y="-10" width="36" height="20" rx="3" fill={skin.tonearm.headshell} />
-          <line x1="-4" y1="10" x2="-4" y2="22" stroke="#f4f4f4" strokeWidth="2" />
+          <rect x="-28" y="-11" width="42" height="22" rx="3" fill={skin.tonearm.headshell} />
+          <line x1="-8" y1="11" x2="-8" y2="24" stroke="#f4f4f4" strokeWidth="2" />
         </g>
         <circle
           data-testid="tonearm-stylus"
-          cx={pose.stylus.x}
-          cy={pose.stylus.y}
+          cx={TONEARM_GEOMETRY.parkedStylus.x}
+          cy={TONEARM_GEOMETRY.parkedStylus.y}
           r={3}
           fill="#f4f4f4"
         />
         <circle cx={pose.pivot.x} cy={pose.pivot.y} r={16} fill={skin.tonearm.color} />
         <circle cx={pose.pivot.x} cy={pose.pivot.y} r={7} fill="#d9b35c" opacity={0.85} />
+      </g>
+      <g data-testid="tonearm-rest">
+        <rect
+          x={TONEARM_GEOMETRY.parkedStylus.x - 13}
+          y={TONEARM_GEOMETRY.parkedStylus.y + 12}
+          width={26}
+          height={8}
+          rx={4}
+          fill="#201a16"
+        />
+        <circle
+          cx={TONEARM_GEOMETRY.parkedStylus.x}
+          cy={TONEARM_GEOMETRY.parkedStylus.y + 16}
+          r={4}
+          fill={skin.tonearm.color}
+        />
       </g>
     </svg>
   );

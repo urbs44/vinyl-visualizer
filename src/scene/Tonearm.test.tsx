@@ -15,20 +15,21 @@ const BASE_STATE: TurntableState = {
 };
 
 describe('Tonearm', () => {
-  test('renders playing pose in cabinet coordinates', () => {
+  test('renders playing pose as a long arm over the lower-right groove', () => {
     render(<Tonearm state={BASE_STATE} />);
 
     expect(screen.getByTestId('tonearm-svg')).toHaveAttribute('viewBox', TONEARM_GEOMETRY.viewBox);
-    expect(screen.getByTestId('tonearm-arm')).toHaveStyle({ transform: 'rotate(0deg)' });
+    expect(screen.getByTestId('tonearm-arm')).toHaveStyle({ transform: 'rotate(22deg)' });
     expect(screen.getByTestId('tonearm-stylus')).toHaveAttribute(
       'cx',
-      String(TONEARM_GEOMETRY.stylus.x)
+      String(TONEARM_GEOMETRY.parkedStylus.x)
     );
   });
 
-  test('rotates to the rest pose when paused', () => {
+  test('renders a fixed arm rest for the paused pose', () => {
     render(<Tonearm state={{ ...BASE_STATE, isPlaying: false }} />);
 
-    expect(screen.getByTestId('tonearm-arm')).toHaveStyle({ transform: 'rotate(28deg)' });
+    expect(screen.getByTestId('tonearm-arm')).toHaveStyle({ transform: 'rotate(0deg)' });
+    expect(screen.getByTestId('tonearm-rest')).toBeInTheDocument();
   });
 });
