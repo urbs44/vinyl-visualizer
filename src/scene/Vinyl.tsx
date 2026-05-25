@@ -14,7 +14,7 @@ const SPIN_DURATION_MS = 60_000 / RPM;
 export function Vinyl({ state, size = 420 }: Props) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const animationRef = useRef<Animation | null>(null);
-  const rateFrameRef = useRef<number | null>(null);
+  const cancelRateEaseRef = useRef<(() => void) | null>(null);
   const skin = useSkin();
   const [palette, setPalette] = useState<Palette | null>(null);
   const [redrawTick, setRedrawTick] = useState(0);
@@ -76,10 +76,11 @@ export function Vinyl({ state, size = 420 }: Props) {
 
     const animation = animationRef.current;
     const targetRate = state.isPlaying && !prefersReducedMotion() ? 1 : 0;
-    rateFrameRef.current = easePlaybackRate(animation, targetRate, 1500, rateFrameRef.current);
+    cancelRateEaseRef.current?.();
+    cancelRateEaseRef.current = easePlaybackRate(animation, targetRate, 1500);
 
     return () => {
-      if (rateFrameRef.current) cancelAnimationFrame(rateFrameRef.current);
+      cancelRateEaseRef.current?.();
     };
   }, [state.isPlaying, state.transitionKey, redrawTick]);
 
@@ -152,23 +153,26 @@ function drawVinyl(
 function easePlaybackRate(
   animation: Animation,
   target: number,
-  durationMs: number,
-  existingFrame: number | null
-): number {
-  if (existingFrame) cancelAnimationFrame(existingFrame);
+  durationMs: number
+): () => void {
   const start = animation.playbackRate;
   const startTime = performance.now();
-  let frame = 0;
+  let frameId = 0;
+  let cancelled = false;
 
   function step(now: number) {
+    if (cancelled) return;
     const t = Math.min(1, (now - startTime) / durationMs);
     const eased = 1 - Math.pow(1 - t, 3);
     animation.playbackRate = start + (target - start) * eased;
-    if (t < 1) frame = requestAnimationFrame(step);
+    if (t < 1) frameId = requestAnimationFrame(step);
   }
 
-  frame = requestAnimationFrame(step);
-  return frame;
+  frameId = requestAnimationFrame(step);
+  return () => {
+    cancelled = true;
+    cancelAnimationFrame(frameId);
+  };
 }
 
 function prefersReducedMotion(): boolean {

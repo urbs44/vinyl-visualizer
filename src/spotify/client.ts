@@ -6,9 +6,11 @@ const BASE = 'https://api.spotify.com/v1';
 
 export class RateLimitError extends Error {
   name = 'RateLimitError';
+  retryAfter: number;
 
-  constructor(public retryAfter: number) {
+  constructor(retryAfter: number) {
     super(`Rate limited; retry after ${retryAfter}s`);
+    this.retryAfter = retryAfter;
   }
 }
 

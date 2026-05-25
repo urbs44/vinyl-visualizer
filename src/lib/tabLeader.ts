@@ -18,8 +18,10 @@ interface ChannelLike {
 class MemoryBroadcastChannel implements ChannelLike {
   private static channels = new Map<string, Set<MemoryBroadcastChannel>>();
   onmessage: ((event: { data: unknown }) => void) | null = null;
+  private readonly name: string;
 
-  constructor(private readonly name: string) {
+  constructor(name: string) {
+    this.name = name;
     const channel = MemoryBroadcastChannel.channels.get(name) ?? new Set();
     channel.add(this);
     MemoryBroadcastChannel.channels.set(name, channel);
@@ -39,7 +41,7 @@ class MemoryBroadcastChannel implements ChannelLike {
 }
 
 function createChannel(name: string): ChannelLike {
-  if ('BroadcastChannel' in window) return new BroadcastChannel(name);
+  if ('BroadcastChannel' in window) return new BroadcastChannel(name) as unknown as ChannelLike;
   return new MemoryBroadcastChannel(name);
 }
 
