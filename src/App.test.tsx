@@ -1,7 +1,8 @@
 import { render, screen } from '@testing-library/react';
 import App from './App';
 
-test('renders app title', () => {
+test('renders login when unauthenticated', () => {
   render(<App />);
   expect(screen.getByText('VinylVision')).toBeInTheDocument();
+  expect(screen.getByRole('button', { name: /connect spotify/i })).toBeInTheDocument();
 });
