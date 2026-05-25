@@ -1,22 +1,19 @@
-import { describe, expect, test, vi } from 'vitest';
-import { extractPalette } from './extractPalette';
-
-vi.mock('node-vibrant/browser', () => ({
-  Vibrant: {
-    from: () => ({
-      getPalette: async () => ({
-        Vibrant: { hex: '#ff0000' },
-        DarkVibrant: { hex: '#880000' },
-        Muted: { hex: '#aa6666' },
-      }),
-    }),
-  },
-}));
+import { describe, expect, test } from 'vitest';
+import { extractPalette, paletteFromPixels } from './extractPalette';
 
 describe('extractPalette', () => {
-  test('returns palette with dominant/dark/muted colors', async () => {
-    const palette = await extractPalette('https://i.scdn.co/img.jpg');
-    expect(palette).toEqual({ dominant: '#ff0000', dark: '#880000', muted: '#aa6666' });
+  test('paletteFromPixels returns dominant/dark/muted colors', () => {
+    const data = new Uint8ClampedArray([
+      255, 0, 0, 255,
+      255, 0, 0, 255,
+      255, 0, 0, 255,
+      255, 0, 0, 255,
+    ]);
+    expect(paletteFromPixels(data)).toEqual({
+      dominant: '#ff0000',
+      dark: '#990000',
+      muted: '#cc4d4d',
+    });
   });
 
   test('returns null on null url', async () => {
