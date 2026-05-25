@@ -34,4 +34,23 @@ describe('SleeveCard', () => {
       '/spotify-full-logo-white.svg'
     );
   });
+
+  test('keeps long metadata inside the fixed sleeve width', () => {
+    render(
+      <SleeveCard
+        state={{
+          ...BASE_STATE,
+          title: 'A Very Long Track Title That Should Not Shift The Artwork',
+          albumName: 'A Very Long Album Title That Should Be Clamped Without Moving The Sleeve',
+        }}
+      />
+    );
+
+    expect(screen.getByTestId('sleeve-card')).toHaveClass('w-[min(260px,34vw)]');
+    expect(screen.getByTestId('sleeve-metadata')).toHaveClass(
+      'w-full',
+      'h-[76px]',
+      'overflow-hidden'
+    );
+  });
 });

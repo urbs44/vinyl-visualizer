@@ -12,7 +12,7 @@ export function SleeveCard({ state }: Props) {
 
   const artwork = (
     <div
-      className="w-[min(260px,34vw)] aspect-square flex items-center justify-center rounded-sm shadow-2xl"
+      className="w-full aspect-square flex items-center justify-center rounded-sm shadow-2xl"
       style={{ backgroundColor: skin.cabinet.fill }}
     >
       {state.artworkUrl ? (
@@ -30,13 +30,16 @@ export function SleeveCard({ state }: Props) {
   );
 
   return (
-    <div className="flex flex-col items-start gap-3 max-w-[300px] shrink-0">
+    <div
+      data-testid="sleeve-card"
+      className="flex flex-col items-start gap-3 w-[min(260px,34vw)] shrink-0"
+    >
       {state.externalUrl ? (
         <a
           href={state.externalUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="block focus:outline-none focus-visible:ring-2 focus-visible:ring-[#1ED760]"
+          className="block w-full focus:outline-none focus-visible:ring-2 focus-visible:ring-[#1ED760]"
           aria-label={`Listen to ${state.title} on Spotify`}
         >
           {artwork}
@@ -44,10 +47,15 @@ export function SleeveCard({ state }: Props) {
       ) : (
         artwork
       )}
-      <div className="text-white min-w-0">
+      <div
+        data-testid="sleeve-metadata"
+        className="w-full text-white min-w-0 h-[76px] overflow-hidden"
+      >
         <div className="font-semibold leading-tight line-clamp-2">{state.title}</div>
         <div className="text-sm text-white/70 line-clamp-1">{state.subtitle}</div>
-        {state.albumName && <div className="text-xs text-white/50 italic line-clamp-1">{state.albumName}</div>}
+        {state.albumName && (
+          <div className="text-xs text-white/50 italic line-clamp-1">{state.albumName}</div>
+        )}
       </div>
       {state.externalUrl && (
         <a
