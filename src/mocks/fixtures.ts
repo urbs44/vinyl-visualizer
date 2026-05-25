@@ -1,5 +1,7 @@
 import type { SpotifyNowPlayingResponse } from '../spotify/nowPlaying';
 
+export const MOCK_ARTWORK_URL = 'https://i.scdn.co/image/ab67616d00001e02ff9ca10b55ce82ae553c8228';
+
 export const TRACK_FIXTURE: SpotifyNowPlayingResponse = {
   is_playing: true,
   progress_ms: 42_000,
@@ -11,7 +13,7 @@ export const TRACK_FIXTURE: SpotifyNowPlayingResponse = {
     external_urls: { spotify: 'https://open.spotify.com/track/mock1' },
     album: {
       name: 'Mock Album',
-      images: [{ url: 'https://i.scdn.co/image/ab67616d00001e02ff9ca10b55ce82ae553c8228' }],
+      images: [{ url: MOCK_ARTWORK_URL }],
     },
     artists: [{ name: 'Mock Artist' }],
   },

@@ -2,7 +2,7 @@ import { deriveTurntableState } from '../playback/deriveTurntableState';
 import { useSkin } from '../skins/useSkin';
 import { usePlayback } from '../spotify/usePlayback';
 import { useUiStore } from '../store/uiStore';
-import { CleanModeToggle } from '../ui/CleanModeToggle';
+import { CleanModeSurface, CleanModeToggle } from '../ui/CleanModeToggle';
 import { SpotifyAttribution } from '../ui/SpotifyAttribution';
 import { TrackInfo } from '../ui/TrackInfo';
 import { Cabinet } from './Cabinet';
@@ -32,7 +32,10 @@ export function Scene() {
   }
 
   return (
-    <div className="h-full w-full overflow-hidden" style={{ background: skin.wall.background }}>
+    <CleanModeSurface
+      className="h-full w-full overflow-hidden"
+      style={{ background: skin.wall.background }}
+    >
       <CleanModeToggle />
       <div className="h-full flex flex-col lg:flex-row items-center justify-center gap-8 lg:gap-12 px-6 lg:px-12 py-10">
         <SleeveCard state={state} />
@@ -44,6 +47,6 @@ export function Scene() {
       </div>
       <TrackInfo state={state} hidden={cleanMode} />
       <SpotifyAttribution externalUrl={externalUrl} />
-    </div>
+    </CleanModeSurface>
   );
 }

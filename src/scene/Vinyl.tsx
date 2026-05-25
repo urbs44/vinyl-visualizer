@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import type { TurntableState } from '../playback/deriveTurntableState';
 import { extractPalette, type Palette } from '../palette/extractPalette';
 import { useSkin } from '../skins/useSkin';
+import { getVinylLabelColor } from './vinylColors';
 
 interface Props {
   state: TurntableState;
@@ -39,13 +40,20 @@ export function Vinyl({ state, size = 420 }: Props) {
     window.addEventListener('resize', bump);
     const motionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
     motionQuery.addEventListener('change', bump);
-    const dprQuery = window.matchMedia(`(resolution: ${window.devicePixelRatio}dppx)`);
-    dprQuery.addEventListener('change', bump);
+    let dprQuery: MediaQueryList | null = null;
+    function onDprChange() {
+      bump();
+      dprQuery?.removeEventListener('change', onDprChange);
+      dprQuery = window.matchMedia(`(resolution: ${window.devicePixelRatio}dppx)`);
+      dprQuery.addEventListener('change', onDprChange);
+    }
+    dprQuery = window.matchMedia(`(resolution: ${window.devicePixelRatio}dppx)`);
+    dprQuery.addEventListener('change', onDprChange);
 
     return () => {
       window.removeEventListener('resize', bump);
       motionQuery.removeEventListener('change', bump);
-      dprQuery.removeEventListener('change', bump);
+      dprQuery?.removeEventListener('change', onDprChange);
     };
   }, []);
 
@@ -139,7 +147,7 @@ function drawVinyl(
   context.arc(cx, cy, radius * 0.35, 0, Math.PI * 2);
   context.fill();
 
-  context.fillStyle = palette?.dominant ?? '#777777';
+  context.fillStyle = getVinylLabelColor(palette, ringColor);
   context.beginPath();
   context.arc(cx, cy, radius * 0.3, 0, Math.PI * 2);
   context.fill();

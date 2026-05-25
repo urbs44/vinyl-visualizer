@@ -8,7 +8,7 @@ describe('tabLeader', () => {
     const onChange = vi.fn();
     leader.subscribe(onChange);
     leader.start();
-    vi.advanceTimersByTime(500);
+    vi.advanceTimersByTime(650);
     expect(leader.isLeader()).toBe(true);
     expect(onChange).toHaveBeenCalledWith(true);
     leader.stop();

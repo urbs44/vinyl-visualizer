@@ -81,7 +81,7 @@ export function createTabLeader(channelName: string): TabLeader {
         setLeader(true);
         startHeartbeat();
       }
-    }, 400);
+    }, 400 + Math.random() * 200);
   }
 
   return {

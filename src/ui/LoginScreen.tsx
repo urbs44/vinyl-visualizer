@@ -8,7 +8,7 @@ export function LoginScreen() {
       <p className="text-white/60 text-sm">Your Spotify, as a record player.</p>
       <button
         onClick={() => login()}
-        className="px-6 py-3 rounded-full bg-[#1DB954] hover:bg-[#1ed760] text-black font-semibold"
+        className="px-6 py-3 rounded-full bg-[#1ED760] hover:bg-[#1ed760] text-black font-semibold"
       >
         Connect Spotify
       </button>
