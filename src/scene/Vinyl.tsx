@@ -17,6 +17,7 @@ export function Vinyl({ state, size = 420 }: Props) {
   const rateFrameRef = useRef<number | null>(null);
   const skin = useSkin();
   const [palette, setPalette] = useState<Palette | null>(null);
+  const [redrawTick, setRedrawTick] = useState(0);
 
   const artworkUrl = state.kind === 'track' || state.kind === 'episode' ? state.artworkUrl : null;
 
@@ -31,6 +32,24 @@ export function Vinyl({ state, size = 420 }: Props) {
   }, [artworkUrl]);
 
   useEffect(() => {
+    function bump() {
+      setRedrawTick(tick => tick + 1);
+    }
+
+    window.addEventListener('resize', bump);
+    const motionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+    motionQuery.addEventListener('change', bump);
+    const dprQuery = window.matchMedia(`(resolution: ${window.devicePixelRatio}dppx)`);
+    dprQuery.addEventListener('change', bump);
+
+    return () => {
+      window.removeEventListener('resize', bump);
+      motionQuery.removeEventListener('change', bump);
+      dprQuery.removeEventListener('change', bump);
+    };
+  }, []);
+
+  useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const dpr = window.devicePixelRatio || 1;
@@ -41,7 +60,7 @@ export function Vinyl({ state, size = 420 }: Props) {
     if (!context) return;
     context.setTransform(scale, 0, 0, scale, 0, 0);
     drawVinyl(context, size, skin.label.ringColor, palette);
-  }, [size, skin.label.ringColor, palette, state.transitionKey]);
+  }, [size, skin.label.ringColor, palette, state.transitionKey, redrawTick]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -62,7 +81,7 @@ export function Vinyl({ state, size = 420 }: Props) {
     return () => {
       if (rateFrameRef.current) cancelAnimationFrame(rateFrameRef.current);
     };
-  }, [state.isPlaying, state.transitionKey]);
+  }, [state.isPlaying, state.transitionKey, redrawTick]);
 
   useEffect(() => {
     const animation = animationRef.current;
