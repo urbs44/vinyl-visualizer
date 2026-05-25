@@ -11,7 +11,7 @@ A web app that mirrors the user's Spotify playback as an animated, against-the-w
 
 - Make Spotify listening feel like a physical, tactile experience worth leaving up on a screen.
 - Live-sync visuals to Spotify playback state within ~3 seconds.
-- Comply with Spotify's design and developer policies so this remains shippable as we grow it.
+- Stay within Spotify's design and developer policies as they apply to a personal/Development-Mode prototype. **Public release or Extended Quota approval would require a separate policy review** — Spotify's Developer Policy and the Currently Playing endpoint docs both caution against synchronizing visual media with Spotify sound recordings, and this app is explicitly synchronized visual media even though it never touches audio. Personal use under Development Mode is the only context this spec commits to.
 
 ## Non-Goals (v1)
 
@@ -52,8 +52,8 @@ The spinning vinyl is therefore **decorative and abstract**, not a carrier of ar
 ### Stack
 
 - **React 18 + Vite + TypeScript** — fast dev, type safety for nested Spotify response shapes.
-- **Zustand** — UI state only (skin id, clean mode, normalized playback snapshot).
-- **TanStack Query** — owns the polling fetch lifecycle (interval, retry, stale-time, cancellation, focus refetch). Replaces the originally-planned custom `usePolling` hook so we don't reinvent that wheel.
+- **Zustand** — UI preferences only (skin id, clean mode). Never holds tokens or playback data.
+- **TanStack Query + BroadcastChannel** — owns playback state end to end. Query owns the polling fetch lifecycle (interval, retry, stale-time, cancellation, focus refetch). The leader tab's Query cache is the source of truth; follower tabs receive snapshots via BroadcastChannel and feed them into their own Query cache via `setQueryData`.
 - **Tailwind CSS** — layout and base styling.
 - **Canvas 2D** — abstract vinyl rendering (grooves, label, palette wash). Redraw triggers in §Rendering.
 - **SVG** — tonearm.
@@ -106,7 +106,7 @@ src/
 │   ├── CleanModeToggle.tsx     F key / tap-and-hold; clean mode preserves attribution
 │   └── SpotifyAttribution.tsx  Persistent "Listen on Spotify" + logo where required
 ├── store/
-│   └── uiStore.ts              Zustand: { skin, cleanMode } only — no tokens, no raw track
+│   └── uiStore.ts              Zustand: { skin, cleanMode } only — no tokens, no playback data
 ├── lib/
 │   └── tabLeader.ts            BroadcastChannel-based leader election (only leader tab polls)
 └── styles/
@@ -162,8 +162,8 @@ src/
 | Event | Visual reaction |
 |---|---|
 | New transitionKey | Tonearm lifts → vinyl fades out → palette extracted from new artwork → new vinyl + sleeve card fade in → tonearm lowers |
-| Pause | Tonearm lifts; vinyl decelerates to stop (~1.5s) |
-| Resume | Tonearm lowers; vinyl accelerates to 33⅓ RPM |
+| Pause | Tonearm lifts; vinyl decelerates to stop (~1.5s ease-out) via Web Animations API rate handoff |
+| Resume | Tonearm lowers; vinyl accelerates to 33⅓ RPM (~1.8s ease-in) via WAAPI rate handoff |
 | Idle | No vinyl, prompt to play |
 | Ad | Generic spinning vinyl, no sleeve card |
 | 401 from API | Silent refresh + retry once; second failure → re-login |
@@ -186,7 +186,7 @@ src/
 - Center **abstract label**: filled with dominant color extracted from album artwork, framed by skin's label-ring color. No album art on it.
 - Small dark center hole.
 - **Gloss highlight is a separate non-rotating overlay** above the rotating canvas — light source stays fixed while the disc spins beneath it.
-- Spin: CSS `transform: rotate()` animation on the canvas element. 360° / 1.8s linear infinite. `animation-play-state` toggles with playback. Respects `prefers-reduced-motion` (no spin, just static label).
+- Spin: **Web Animations API** rotation on the canvas element, 360° / 1.8s linear (33⅓ RPM target). Play/pause uses `animation.playbackRate` interpolation (ease over ~1.5s) so the disc decelerates/accelerates rather than stopping instantly. Plain `animation-play-state: paused` would be an instant freeze, which we explicitly reject. Respects `prefers-reduced-motion` (no spin, no ease, just a static label).
 
 ### Canvas redraw triggers
 
@@ -344,9 +344,16 @@ Skin system is built generically (CSS variables + skin object) so v1.1 can drop 
 ## Security
 
 - Tokens in `sessionStorage` only, accessed exclusively via `tokenStore`. Not "secure" — just less persistent than `localStorage`. Any XSS still wins, so:
-  - Strict CSP via `<meta>` (no inline scripts, no third-party origins beyond Spotify CDN for artwork).
+  - **CSP delivered via Vercel response headers** (in `vercel.json`), not just a `<meta>` tag — headers cover the initial document load too. Minimum directives:
+    - `default-src 'self'`
+    - `connect-src 'self' https://accounts.spotify.com https://api.spotify.com`
+    - `img-src 'self' data: https://i.scdn.co https://image-cdn-ak.spotifycdn.com https://image-cdn-fa.spotifycdn.com` (Spotify artwork CDNs; data: for canvas captures)
+    - `script-src 'self'` (no inline, no third-party)
+    - `style-src 'self' 'unsafe-inline'` — required because React inline-style props (used for skin CSS variables) inject inline styles. A stricter `style-src 'self'` would break the skin system. Revisit with nonces if we ever want truly strict.
+    - `frame-ancestors 'none'`
   - No third-party analytics or runtime scripts.
   - `history.replaceState` after callback to strip `?code=` from history/URL.
+- **Palette extraction must not taint the canvas.** Album artwork is loaded with `crossOrigin="anonymous"` (Spotify's CDN sends permissive CORS); on failure we fetch the image as a blob and read it from there. Without this, any canvas readback for palette extraction throws a SecurityError.
 - Real logout: clears tokens, verifier, state, palette cache, and broadcasts to other tabs.
 - `state` parameter validated on callback (CSRF protection).
 
