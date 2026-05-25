@@ -16,6 +16,8 @@ dist-ssr
 .vercel/
 .vite/
 .worktrees/
+test-results/
+playwright-report/
 
 # Editor directories and files
 .vscode/*
